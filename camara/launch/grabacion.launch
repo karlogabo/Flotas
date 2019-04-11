@@ -1,0 +1,11 @@
+<launch>
+
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch"> </include>
+
+  <arg name="topics_name" default="/camera/depth/image_rect_raw /camera/infra1/image_rect_raw /camera_imu /bracket_imu /head_imu /vel"/>
+
+
+  <node pkg="rosbag" type="record" name="rosbag_record_1"
+   args= "$(arg topics_name)" output = "screen"/>
+
+</launch>

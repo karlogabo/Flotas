@@ -1,0 +1,9 @@
+float32 num_yawn
+float32 num_blinks
+float32 eye_area
+float32 mouth_area
+float32 angle_pitch
+float32 angle_yaw
+float32 angle_roll
+float32 heart_rate
+float32 perclos

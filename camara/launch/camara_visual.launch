@@ -1,0 +1,10 @@
+<launch>
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch"> </include>
+  <node pkg="camara" type="infra.py" name="infra" output="screen">
+  </node>
+
+  <arg name="topics_name" default="record -o /root/Bags/ /camera/depth/image_rect_raw /camera/infra1/image_rect_raw"/>
+  <node pkg="rosbag" type="record" name="rosbag_record_1"
+   args= "$(arg topics_name)" output = "screen"/>
+
+</launch>
