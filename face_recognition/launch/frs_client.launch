@@ -1,0 +1,34 @@
+<launch>
+    <include file="$(find realsense2_camera)/launch/rs_camera.launch"> </include>
+
+   <!-- <node pkg="usb_cam" type="usb_cam_node" name="usb_cam" output="screen">
+    <param name="video_device" value="/dev/video0"/>
+    <param name="pixel_format" value="yuyv"/>
+    <param name="autofocus" value="false"/>
+   </node> -->
+   <remap from= "ir_image" to ="/camera/infra1/image_rect_raw"/>
+   <remap from= "depth_image" to ="/camera/depth/image_rect_raw"/>
+   <!-- <remap from="color_image" to="/usb_cam/image_raw"/> -->
+   <node pkg="face_recognition" type="face_detection.py" name="face_detection" output="screen">
+    <param name="rotation_cycles" value= "0"/>
+    <param name="rgb_camera" value="false"/>
+    <param name="ir_camera" value="true"/>
+    <param name="depth_camera" value="true"/>
+    <param name="rgb_image_encoding" value="bgr8"/>
+    <param name="ir_image_encoding" value="passthrough"/>
+    <param name="depth_image_encoding" value="passthrough"/>
+    <param name="multiple_detection" value="false"/>
+    <param name="show_detection" value="true"/>
+    <param name="inform_detection" value="true"/>
+    <!-- <param name="min_area" value="28000"/> -->
+   </node>
+
+   <!-- <node pkg="face_recognition" type="feature_extraction.py" name="feature_extraction" output="screen">
+    <param name="depth_camera" value="false"/>
+    <param name="image_encoding" value="bgr8"/>
+    <param name="depth_image_encoding" value="passthrougth"/>
+    <param name="extraction_method" value="landmarks"/>
+    <param name="show_features" value="true"/>
+   </node> -->
+
+</launch>
