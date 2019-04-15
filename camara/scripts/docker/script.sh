@@ -1,4 +1,5 @@
 #! /bin/bash
+xhost local:root
 docker run -it \
   --net=host \
   --privileged \
@@ -7,6 +8,7 @@ docker run -it \
   --env=unix$DISPLAY \
   --env="QT_X11_NO_MITSHM=1" \
   --privileged -v /dev/usb/hiddev0 \
+  -v /dev/ttyACM0:/dev/ttyACM0 \
   -v /home/innovacion/ADAS_workspace/src/realsense2_camera/:/ADAS_ws/src/realsense2_camera \
   -v /home/innovacion/ADAS_workspace/src/ddynamic_reconfigure/:/ADAS_ws/src/ddynamic_reconfigure \
   -v /home/innovacion/ADAS_workspace/src/camara/:/ADAS_ws/src/camara \

@@ -29,12 +29,15 @@ class Flag(object):
             if self.primer is False:
                 self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
                 roslaunch.configure_logging(self.uuid)
+                #TORRE
                 self.launch =  roslaunch.parent.ROSLaunchParent(self.uuid, ["/home/innovacion/ADAS_workspace/src/camara/launch/grabacion.launch"])
+                #DOCKER
+                # self.launch =  roslaunch.parent.ROSLaunchParent(self.uuid, ["/ADAS_ws/src/camara/launch/grabacion.launch"]) #
                 self.launch.start()
                 rospy.loginfo("Grabacion launch started")
                 self.primer = True
         else:
-            
+
             if self.primer is True:
                 self.launch.shutdown()
                 self.primer = False
