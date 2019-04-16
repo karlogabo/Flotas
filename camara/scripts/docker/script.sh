@@ -24,3 +24,6 @@ docker run -it \
 
 #git commit -m "number of the commit"
 #git push -u origin master
+
+
+#sudo nmap -sn 192.168.56.1/25 conocer puerto del laser                      --host 192.168.56.59        

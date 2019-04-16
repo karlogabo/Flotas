@@ -405,8 +405,6 @@ class Camera(object):
         nose_ica=nose_ica.T
         # nose_ica_b = nose_ica_b.T
 
-
-
         # plt.clf()
         # plt.subplot(211)
         # plt.xlabel("Number of frames")
@@ -460,9 +458,7 @@ class Camera(object):
         self.bpm_a_b = self.xf[self.index_nose_b] * 60
         self.bpm_b_b = self.xf[self.index_fore_b] * 60
 
-
         # cwtmatr , freqs = pywt.cwt(y_plot_nose, len(y_plot_nose)  , "morl", self.fs)
-
         #Gets the pulse
         self.window_hr = self.get_pulse(self.bpm_a)
         self.window_hr_b = self.get_pulse_b(self.bpm_a_b)
@@ -496,10 +492,8 @@ class Camera(object):
 
         self.blinks.pop(0)
         self.blinks.append(x1)
-
         # self.blinks_sg = sg(self.blinks, 5, 2)
         # peaks , _ = find_peaks(self.blinks)
-
         self.line.set_ydata(self.blinks)
         # self.line2.set_ydata(self.blinks_sg)
 
@@ -705,7 +699,6 @@ def main():
     rospy.init_node('Infrarojo',anonymous=True)
     cam = Camera()
     rospy.loginfo('Node started')
-
 
     while not rospy.is_shutdown():
 
