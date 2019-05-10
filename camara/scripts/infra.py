@@ -41,8 +41,8 @@ class Camera(object):
     def __init__(self):
 
         """ Subscribers """
-        rospy.Subscriber("/camera/depth/image_rect_raw" , Image , self.callback_depth,queue_size=1)
-        rospy.Subscriber("/camera/infra1/image_rect_raw", Image,  self.callback_infra,queue_size=1)
+        rospy.Subscriber("/camera/depth/image_rect_raw" , Image , self.callback_depth, queue_size=1)
+        rospy.Subscriber("/camera/infra1/image_rect_raw", Image,  self.callback_infra, queue_size=1)
         rospy.Subscriber("/flag_pub", Float32, self.callback_flag, queue_size = 1)
 
         """ Publishers """
@@ -52,6 +52,8 @@ class Camera(object):
         self.quaternion = rospy.Publisher("quaternion", PoseStamped  , queue_size = 1)
         self.q = PoseStamped()
         self.q.header.frame_id = "map"
+        self.heart_rate_b = rospy.Publisher("heart_rate_b" , Float32, queue_size = 1)
+        self.heart_rate_b_msg = Float32()
 
         """ Node Parameters """
 
@@ -65,6 +67,7 @@ class Camera(object):
         self.predictor = dlib.shape_predictor(os.path.join(os.path.dirname(sys.path[0]), 'scripts', 'shape_predictor_68_face_landmarks.dat'))
         self.model68 = (os.path.join(os.path.dirname(sys.path[0]), 'scripts', 'model.txt'))
         self.bpm_a = 0
+        self.bpm_a_b = 0
         self.window_hr=0
         self.window_hr_b=0
         self.pulso_pantalla = 0
@@ -81,7 +84,7 @@ class Camera(object):
         self.flag_300 = 0
         self.eye_thresh = 0.3
         self.mouth_thresh = 0.60
-        self.num_frames = 1
+        self.num_frames = 2
         self.blink_counter = 0
         self.total = 0
         self.eyes_open = 0.0
@@ -146,9 +149,8 @@ class Camera(object):
 
     def sma(self,data,window):
 
-        sma = np.convolve(data,np.ones(window),"valid")/window
+        sma = np.convolve(data, np.ones(window), "valid")/window
         data = data[int(window-1):]
-        # data = data[int(window/2): - int(np.ceil(window/2))]
         sma_window = data - sma
 
         return sma_window
@@ -161,7 +163,6 @@ class Camera(object):
                 raw_value.append(line)
         model_points = np.array(raw_value, dtype=np.float32)
         model_points = np.reshape(model_points, (3, -1)).T
-        # model_points *= 4
         model_points[:, -1] *= -1
 
         return model_points
@@ -203,13 +204,13 @@ class Camera(object):
         self.q.pose.orientation.y= sy * cp * sr + cy * sp * cr;
         self.q.pose.orientation.z= sy * cp * cr - cy * sp * sr;
 
-    def callback_infra(self,datos):
+    def callback_infra(self, datos):
 
         global enable_infra
         enable_infra = True
         self.current_infra = datos
 
-    def callback_flag(self,datos):
+    def callback_flag(self, datos):
 
         global enable_flag
         if datos.data == 1.0:
@@ -218,7 +219,7 @@ class Camera(object):
             enable_flag = False
 
 
-    def detect_near_face(self,rects):
+    def detect_near_face(self, rects):
 
         dist = []
         for rect in rects:
@@ -236,7 +237,7 @@ class Camera(object):
 
         return rectss
 
-    def distance(self,shape):
+    def distance(self, shape):
 
         vector_b = np.array([shape[27:35]])
         (x_rr,y_rr,w_rr,h_rr)=cv2.boundingRect(vector_b)
@@ -258,16 +259,16 @@ class Camera(object):
 
         self.video_capture.release()
 
-    def visualizacion(self,frame):
+    def visualizacion(self, frame):
 
-        cv2.imshow("Frame",frame)
+        cv2.imshow("Frame", frame)
         cv2.waitKey(1)
 
     def  eye_ratio(self,eye):
 
-        A = dist.euclidean(eye[1],eye[5])
-        B = dist.euclidean(eye[2],eye[4])
-        C = dist.euclidean(eye[0],eye[3])
+        A = dist.euclidean(eye[1], eye[5])
+        B = dist.euclidean(eye[2], eye[4])
+        C = dist.euclidean(eye[0], eye[3])
         eye_ratio = (A+B)#/(C * 2.0)
         # print(eye_ratio)
 
@@ -275,18 +276,18 @@ class Camera(object):
 
     def mouth_ratio(self,mou):
         #Horizontal
-        a   = dist.euclidean(mou[0], mou[6])
+        a  = dist.euclidean(mou[0], mou[6])
         #Vertical
         b  = dist.euclidean(mou[3], mou[9])
         c  = dist.euclidean(mou[2], mou[10])
         d  = dist.euclidean(mou[4], mou[8])
-        e   = (b+c+d)/3
+        e  = (b+c+d)/3
 
         mouth_ratio = e/a
 
         return mouth_ratio
 
-    def get_pulse(self,ad_hr):
+    def get_pulse(self, ad_hr):
 
         # T + 1 pulse adquiction
         self.pulso_guardado = self.pulso_adquirido
@@ -299,7 +300,7 @@ class Camera(object):
 
         return self.pulso_pantalla
 
-    def get_pulse_b(self,ad_hr):
+    def get_pulse_b(self, ad_hr):
 
         # T + 1 pulse adquiction
         self.pulso_guardado_b = self.pulso_adquirido_b
@@ -326,7 +327,6 @@ class Camera(object):
         self.data_buffernose_gray.append(self.nose_gray[0])
         self.data_bufferforehead_gray.pop(0)
         self.data_bufferforehead_gray.append(self.forehead_gray[0])
-        #print("ENTRE ACA")
         self.cont += 1
         self.cont2 += 1
 
@@ -334,47 +334,33 @@ class Camera(object):
             self.cont = 0
         else:
             pass
-        if self.cont2 == 20:
+        if self.cont2 == 20: #En vez de  5: ESTA EN 10
             self.cont2 = 0
             self.normalizacion()
-            print("ENTREEEEEEEEEEEE")
+            print("")
         else:
             pass
 
     def bandpass_filter(self, data, lowcut, highcut, fs):
 
-        order = 5.0
+        order = 5.0 #5.0 el bag PULSE_A
         nyq = 0.5 * fs
         low = lowcut/nyq
         high = highcut/nyq
-        b,a = butter(order,[low,high],btype='band')
-        y = lfilter(b,a,data)
+        b,a = butter(order, [low,high], btype='band')
+        y = lfilter(b, a, data)
 
         return y
 
     def normalizacion(self):
+
         self.flag_300 =1
         self.n_frame = len(self.data_buffernose_gray)
         self.time = np.mean(self.time_v)
-        self.fs = 1.0/self.time        #
+        self.fs = 1.0/self.time
         self.data_buffernose_gray_b = self.sma(self.data_buffernose_gray, 5)
-        self.data_bufferforehead_gray_b = self.sma(self.data_bufferforehead_gray,5)
+        self.data_bufferforehead_gray_b = self.sma(self.data_bufferforehead_gray, 5)
         self.xf = np.linspace(0.0,(self.fs/2),self.n_frame/2)
-
-        # self.data_buffernose_gray_b = sg(self.data_buffernose_gray,5,2)
-        # self.data_bufferforehead_gray_b = sg(self.data_buffernose_gray,5,2)
-        # print(self.data_buffernose_gray)
-        #
-        # plt.subplot(211)
-        # plt.xlabel("Number of frames")
-        # plt.ylabel("Intensity")
-        # plt.plot(self.data_buffernose_gray,'b')
-        # plt.subplot(212)
-        # plt.xlabel("Number of frames")
-        # plt.ylabel("Intensity")
-        # plt.plot(self.data_bufferforehead_gray,'b')
-        # # # # # plt.plot(self.data_bufferforehead_gray,'r')
-        # plt.show()
 
         # Normalizacion datos
         n_datanose_gray = (self.data_buffernose_gray - np.mean(self.data_buffernose_gray))/np.std(self.data_buffernose_gray)
@@ -401,23 +387,9 @@ class Camera(object):
         # Applying ICA
         nose_ica = jade.main(self.ica_both)
         nose_ica_b = self.ica_both_b
-        # nose_ica_b = jade.main(self.ica_both_b)
         nose_ica=nose_ica.T
-        # nose_ica_b = nose_ica_b.T
 
-        # plt.clf()
-        # plt.subplot(211)
-        # plt.xlabel("Number of frames")
-        # plt.ylabel("Intensity")
-        # plt.plot(np.ravel(nose_ica[0,:]),'b')
-        # plt.subplot(212)
-        # plt.xlabel("Number of frames")
-        # plt.ylabel("Intensity")
-        # plt.plot((self.ica_both[0,:]),'b')
-        # # # # # plt.plot(self.data_bufferforehead_gray,'r')
-        # plt.show()
 
-        #nose_green = nose_ica[1,:]
         nose_green = nose_ica[0,:]
         nose_green = np.ravel(nose_green)
         nose_green = np.hamming(len(nose_green)) * nose_green
@@ -425,13 +397,10 @@ class Camera(object):
         nose_green_b = np.ravel(nose_green_b)
         nose_green_b = np.hamming(len(nose_green_b)) * nose_green_b
         #Bandpass filter on the green channel on nose and forehead
-        nose_green= self.bandpass_filter(nose_green,0.75,2.0,self.fs)  #ESTA E N 0.95 a 2.0
-        fore_ica = self.bandpass_filter(nose_ica[1,:],0.75,2.0,self.fs)
-        nose_green_b = self.bandpass_filter(nose_green_b , 0.75 , 2.0, self.fs)
-        fore_green_b = self.bandpass_filter(nose_ica_b[1,:], 0.75, 2.0, self.fs)
-
-        """g_burg = pburg(nose_green, 34, 'AIC', 4096, self.fs)
-        g_burg_b = pburg(nose_green_b, 34, 'AIC', 4096, self.fs)"""
+        nose_green= self.bandpass_filter(nose_green,0.90, 1.7,self.fs)  #ESTA E N 0.95 a 2.0
+        fore_ica = self.bandpass_filter(nose_ica[1,:],0.90, 1.7,self.fs)
+        nose_green_b = self.bandpass_filter(nose_green_b , 0.90 , 1.7, self.fs)
+        fore_green_b = self.bandpass_filter(nose_ica_b[1,:], 0.90, 1.7, self.fs)
 
         #Fourier transform
         g_nosefft= np.absolute(np.fft.fft(nose_green, norm="ortho"))
@@ -470,17 +439,6 @@ class Camera(object):
         #Plot fourier
         # plt.clf()
         # g_burg.plot()
-
-        """xf_burg = np.linspace(0, g_burg.df * 2049, num=2049)
-        index = np.argmax(g_burg.psd)
-        bpm_burg = xf_burg[index]*60
-        print(bpm_burg, "BPM BURG")
-
-        xf_burg_b = np.linspace(0, g_burg_b.df * 2049, num=2049)
-        index_b = np.argmax(g_burg_b.psd)
-        bpm_burg_b = xf_burg_b[index_b]*60
-        print(bpm_burg_b, "BPM BURG")"""
-
         # plt.plot(xf_burg,(10 * stools.log10(g_burg.psd)),'r')
         # plt.plot(nose_green,'r')
         # #plt.plot(self.xf[(self.xf > 0.70)],y_plot_nose[(self.xf > 0.70)],'r',label="Nose")
@@ -488,7 +446,7 @@ class Camera(object):
         # #plt.title("Red-Nose, Blue-Forehead")
         # plt.show()
 
-    def plotting(self,x1):
+    def plotting(self, x1):
 
         self.blinks.pop(0)
         self.blinks.append(x1)
@@ -500,12 +458,12 @@ class Camera(object):
     def main(self):
 
         try:
-            self.depth = bridge.imgmsg_to_cv2(self.current_depth,desired_encoding="passthrough")
+            self.depth = bridge.imgmsg_to_cv2(self.current_depth, desired_encoding="passthrough")
         except CvBridgeError as e:
             print(e)
 
         try:
-            self.rojo = bridge.imgmsg_to_cv2(self.current_infra,desired_encoding="passthrough")
+            self.rojo = bridge.imgmsg_to_cv2(self.current_infra, desired_encoding="passthrough")
         except CvBridgeError as e:
             print(e)
 
@@ -559,31 +517,30 @@ class Camera(object):
             vector_a=np.array([shape[27:35]])
             (x_r,y_r,w_r,h_r)=cv2.boundingRect(vector_a)
             roi_visualizacion_nose = self.rojo[y_r:y_r+h_r,x_r:x_r+w_r]
-            #roi_visualizacion_nose = imutils.resize(roi_visualizacion_nose, width=100)
-
+            
             for (x, y) in shape[48:60]:
                 cv2.circle(self.rojo, (x, y), 1, (0, 255, 0), -1)
 
             # draw over the (x,y) coordinates of the rigth and left eyebrow
             (x_ci,y_ci) = shape[20]
-            cv2.circle(self.rojo, (x_ci, y_ci), 1, (0,255,0),-1)
+            cv2.circle(self.rojo, (x_ci, y_ci), 1, (0,255,0), -1)
             (x_cd,y_cd) = shape[23]
-            cv2.circle(self.rojo, (x_cd, y_cd), 1, (0,255,0),-1)
+            cv2.circle(self.rojo, (x_cd, y_cd), 1, (0,255,0), -1)
 
             y , _ = self.distance(shape)
 
             # draw the ROI of the forehead
-            cv2.circle(self.rojo,(x_ci, y_ci-10), 1,(255,0,0),-1)
-            cv2.circle(self.rojo,(x_cd, y_cd-10),1, (255,0,0),-1)
-            cv2.rectangle(self.rojo,(x_ci, y_ci-y),(x_cd, y_cd-10),(255,0,0),1)
+            cv2.circle(self.rojo,(x_ci, y_ci-10), 1, (255,0,0), -1)
+            cv2.circle(self.rojo,(x_cd, y_cd-10), 1, (255,0,0), -1)
+            cv2.rectangle(self.rojo, (x_ci, y_ci-y), (x_cd, y_cd-10), (255,0,0), 1)
             roi_visualizacion_forehead = self.rojo[y_ci-y:y_cd-10, x_ci:x_cd]
 
             nose_gray = roi_visualizacion_nose
             forehead_gray = roi_visualizacion_forehead
 
             #Median filter of each channel
-            nose_gray = cv2.medianBlur(nose_gray,3)
-            forehead_gray = cv2.medianBlur(forehead_gray,3)
+            nose_gray = cv2.medianBlur(nose_gray, 3)
+            forehead_gray = cv2.medianBlur(forehead_gray, 3)
 
             # Spatial average of each channel
             self.nose_gray = cv2.mean(nose_gray)
@@ -602,10 +559,8 @@ class Camera(object):
             eye_r = (leftEAR + rightEAR) / 2.0
             _, distance = self.distance(shape)
             eye_r = ((1/eye_r) / distance[0])*1000000
-
             # self.plotting(eye_r)
-
-            if eye_r > 29:  #Estaba en 30 el primer back
+            if eye_r > 28:  #Estaba en 30 el primer back
                 self.blink_counter += 1
                 self.eyes_closed += 1
 
@@ -619,8 +574,8 @@ class Camera(object):
 
             if (self.eyes_open + self.eyes_closed) > 545:
                 self.perclos = (self.eyes_closed/(self.eyes_open+self.eyes_closed))*100
-                print(self.eyes_closed,"Contador ojos cerrados")
-                print(self.eyes_open,"Contador ojos abiertos")
+                print(self.eyes_closed,"Num. Frames ojos cerrados")
+                print(self.eyes_open,"Num. Frames ojos abiertos")
                 print(self.perclos,"PERCLOS")
                 if self.perclos > 40.0:
                     print("ALERTA MICROSUENO")
@@ -632,7 +587,7 @@ class Camera(object):
                 self.yawn_counter +=1
 
             else:
-                if self.yawn_counter >= 10:
+                if self.yawn_counter >= 13:
                     self.cont_yawn +=1
                 self.yawn_counter = 0
 
@@ -651,16 +606,16 @@ class Camera(object):
             self.quaternion.publish(self.q)
 
             #Put the information into the frame
-            cv2.putText(self.rojo,'Num. Parpadeos:{}' .format(self.total), (15,20),cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
-            cv2.putText(self.rojo,'Num. Bostezos:{}' .format(self.cont_yawn), (15,40),cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
-            cv2.putText(self.rojo,'HR:{}' .format(self.window_hr), (15,460),cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
-            cv2.putText(self.rojo,'HR_B:{}' .format(self.window_hr_b), (15,430),cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
-            cv2.putText(self.rojo,'PITCH:{}' .format(euler_angle[0]), (490,420),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
-            cv2.putText(self.rojo,'YAW:{}' .format(euler_angle[1]), (490,440),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
-            cv2.putText(self.rojo,'ROLL:{}' .format(euler_angle[2]), (490,460),cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo,'Num. Parpadeos:{}' .format(self.total), (15,20), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
+            cv2.putText(self.rojo,'Num. Bostezos:{}' .format(self.cont_yawn), (15,40), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
+            cv2.putText(self.rojo,'HR:{}' .format(self.window_hr), (15,460), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
+            cv2.putText(self.rojo,'HR_B:{}' .format(self.window_hr_b), (15,430), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
+            cv2.putText(self.rojo,'PITCH:{}' .format(euler_angle[0]), (490,420), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo,'YAW:{}' .format(euler_angle[1]), (490,440), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo,'ROLL:{}' .format(euler_angle[2]), (490,460), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
 
             try:
-                self.img_pub = bridge. cv2_to_imgmsg(self.rojo,encoding="passthrough")
+                self.img_pub = bridge. cv2_to_imgmsg(self.rojo, encoding="passthrough")
             except CvBridgeError as e:
                 print(e)
 
@@ -671,15 +626,17 @@ class Camera(object):
             self.msg_driver.angle_pitch = euler_angle[0]
             self.msg_driver.angle_yaw = euler_angle[1]
             self.msg_driver.angle_roll = euler_angle[2]
-            self.msg_driver.heart_rate = self.pulso_pantalla
-            self.msg_driver.perclos = self.perclos
+            self.msg_driver.heart_rate = self.window_hr
+            self.msg_driver.heart_rate_b = self.window_hr_b
             self.info.publish(self.msg_driver)
             self.img_bag_pub.publish(self.img_pub)
-
+            self.heart_rate_b_msg.data = self.window_hr_b
+            self.heart_rate_b.publish(self.heart_rate_b_msg.data)
             #Append the data on the buffer and display the video
             # self.fig.canvas.draw()
             # self.fig.canvas.flush_events()
             self.visualizacion(self.rojo)
+            self.msg_driver.perclos = self.perclos
             self.actual_time = (time.time()-self.current)
             self.time_v.append(self.actual_time)
             # print(self.actual_time)
@@ -702,7 +659,7 @@ def main():
 
     while not rospy.is_shutdown():
 
-        if enable_img is True and enable_infra is True:
+        if enable_infra is True and enable_img is True:
             cam.main()
         else:
             print("Grabacion detenida")
