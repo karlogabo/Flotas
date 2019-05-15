@@ -628,10 +628,10 @@ class Camera(object):
             self.msg_driver.angle_yaw = euler_angle[1]
             self.msg_driver.angle_roll = euler_angle[2]
             self.msg_driver.heart_rate = self.window_hr
-            self.msg_driver.heart_rate_b = self.window_hr_b
+            # self.msg_driver.heart_rate_b = self.window_hr_b
             self.info.publish(self.msg_driver)
             self.img_bag_pub.publish(self.img_pub)
-            self.heart_rate_b_msg.data = self.window_hr_b
+            # self.heart_rate_b_msg.data = self.window_hr_b
             self.heart_rate_b.publish(self.heart_rate_b_msg.data)
             #Append the data on the buffer and display the video
             # self.fig.canvas.draw()
