@@ -517,7 +517,7 @@ class Camera(object):
             vector_a=np.array([shape[27:35]])
             (x_r,y_r,w_r,h_r)=cv2.boundingRect(vector_a)
             roi_visualizacion_nose = self.rojo[y_r:y_r+h_r,x_r:x_r+w_r]
-            
+
             for (x, y) in shape[48:60]:
                 cv2.circle(self.rojo, (x, y), 1, (0, 255, 0), -1)
 
@@ -539,8 +539,9 @@ class Camera(object):
             forehead_gray = roi_visualizacion_forehead
 
             #Median filter of each channel
-            nose_gray = cv2.medianBlur(nose_gray, 3)
-            forehead_gray = cv2.medianBlur(forehead_gray, 3)
+            # nose_gray = cv2.medianBlur(nose_gray, 3)
+            # forehead_gray = cv2.medianBlur(forehead_gray, 3)
+            # forehead_gray = cv2.medianBlur(forehead_gray, 3)
 
             # Spatial average of each channel
             self.nose_gray = cv2.mean(nose_gray)
@@ -606,13 +607,13 @@ class Camera(object):
             self.quaternion.publish(self.q)
 
             #Put the information into the frame
-            cv2.putText(self.rojo,'Num. Parpadeos:{}' .format(self.total), (15,20), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
-            cv2.putText(self.rojo,'Num. Bostezos:{}' .format(self.cont_yawn), (15,40), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
-            cv2.putText(self.rojo,'HR:{}' .format(self.window_hr), (15,460), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
-            cv2.putText(self.rojo,'HR_B:{}' .format(self.window_hr_b), (15,430), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
-            cv2.putText(self.rojo,'PITCH:{}' .format(euler_angle[0]), (490,420), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
-            cv2.putText(self.rojo,'YAW:{}' .format(euler_angle[1]), (490,440), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
-            cv2.putText(self.rojo,'ROLL:{}' .format(euler_angle[2]), (490,460), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo, 'Num. Parpadeos:{}' .format(self.total), (15,20), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
+            cv2.putText(self.rojo, 'Num. Bostezos:{}' .format(self.cont_yawn), (15,40), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
+            cv2.putText(self.rojo, 'HR:{}' .format(self.window_hr), (15,460), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
+            cv2.putText(self.rojo, 'HR_B:{}' .format(self.window_hr_b), (15,430), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
+            cv2.putText(self.rojo, 'PITCH:{}' .format(euler_angle[0]), (490,420), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo, 'YAW:{}' .format(euler_angle[1]), (490,440), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo, 'ROLL:{}' .format(euler_angle[2]), (490,460), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
 
             try:
                 self.img_pub = bridge. cv2_to_imgmsg(self.rojo, encoding="passthrough")
