@@ -34,6 +34,9 @@ bridge = CvBridge()
 enable_img = False
 enable_infra = False
 enable_flag = False
+
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('/home/innovacion/ADAS_workspace/src/camara/scripts/adas.avi', fourcc, 20.0, (640, 480))
 # plt.ion()
 
 
@@ -56,7 +59,7 @@ class Camera(object):
         self.heart_rate_b_msg = Float32()
 
         """ Node Parameters """
-
+        self.cont_video = 0
         self.data_buffernose_gray = [0]*200
         self.data_bufferforehead_gray = [0]*200
         self.matrix_v = [0]
@@ -69,6 +72,7 @@ class Camera(object):
         self.bpm_a = 0
         self.bpm_a_b = 0
         self.window_hr=0
+        self.yawn_state = False
         self.window_hr_b=0
         self.pulso_pantalla = 0
         self.pulso_guardado = 0
@@ -76,8 +80,11 @@ class Camera(object):
         self.pulso_pantalla_b = 0
         self.pulso_guardado_b = 0
         self.pulso_adquirido_b = 0
+        self.pitch_counter = 0
+        self.cont_state = 0
         self.cont = 0
         self.cont2 = 0
+        self.yaw_counter = 0
         self.cont_yawn = 0
         self.yawn_counter = 0
         self.flag = 0
@@ -91,6 +98,7 @@ class Camera(object):
         self.eyes_closed = 0.0
         self.perclos = 0.0
         self.mouth_status = False
+
         #self.current_depth = []
         #cv2.namedWindow('frame')
         #self.img_publisher = rospy.Publisher("topico_imagen", Image)
@@ -275,6 +283,7 @@ class Camera(object):
         return eye_ratio
 
     def mouth_ratio(self,mou):
+
         #Horizontal
         a  = dist.euclidean(mou[0], mou[6])
         #Vertical
@@ -388,7 +397,6 @@ class Camera(object):
         nose_ica = jade.main(self.ica_both)
         nose_ica_b = self.ica_both_b
         nose_ica=nose_ica.T
-
 
         nose_green = nose_ica[0,:]
         nose_green = np.ravel(nose_green)
@@ -567,6 +575,8 @@ class Camera(object):
 
                 if self.blink_counter > 50:
                     print("SE ESTA QUEDANDO DORMIDO")
+                    cv2.putText(self.rojo, 'Alerta por fatiga', (420,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255),1)
+
             else:
                 self.eyes_open += 1
                 if self.blink_counter >= self.num_frames:
@@ -590,7 +600,20 @@ class Camera(object):
             else:
                 if self.yawn_counter >= 13:
                     self.cont_yawn +=1
+                    self.yawn_state = True
+
                 self.yawn_counter = 0
+
+            if self.yawn_state is True:
+
+                cv2.putText(self.rojo, 'Alerta por fatiga', (420,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255),1)
+                self.cont_state += 1
+
+                if self.cont_state > 30:
+
+                    self.yawn_state = False
+                    self.cont_state = 0
+
 
             pose = self.solve_pose_by_68_points(shape)
             stabile_pose = []
@@ -606,6 +629,22 @@ class Camera(object):
             self.toQuaternion(euler_angle[1],euler_angle[0],euler_angle[2]+180)
             self.quaternion.publish(self.q)
 
+            if euler_angle[0] < -15:
+                self.pitch_counter += 1
+                if self.pitch_counter > 50:
+                    cv2.putText(self.rojo, 'Alerta por desatencion', (380,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255),1)
+            else:
+                self.pitch_counter = 0
+
+            if euler_angle[1] < -25 or euler_angle[1] > 25:
+                self.yaw_counter += 1
+                if self.yaw_counter > 50:
+                    cv2.putText(self.rojo, 'Alerta por desatencion', (380,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255),1)
+            else:
+                self.yaw_counter = 0
+
+
+
             #Put the information into the frame
             cv2.putText(self.rojo, 'Num. Parpadeos:{}' .format(self.total), (15,20), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
             cv2.putText(self.rojo, 'Num. Bostezos:{}' .format(self.cont_yawn), (15,40), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
@@ -614,6 +653,18 @@ class Camera(object):
             cv2.putText(self.rojo, 'PITCH:{}' .format(euler_angle[0]), (490,420), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
             cv2.putText(self.rojo, 'YAW:{}' .format(euler_angle[1]), (490,440), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
             cv2.putText(self.rojo, 'ROLL:{}' .format(euler_angle[2]), (490,460), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+
+            # self.video = cv2.cvtColor(self.rojo,cv2.COLOR_GRAY2BGR)
+            # out.write(self.video)
+            #
+            # self.cont_video += 1
+            #
+            #
+            # if self.cont_video > 200:
+            #     out.release()
+            #     print("Ya acabe el video papa")
+            #     self.cont_video = 0
+
 
             try:
                 self.img_pub = bridge. cv2_to_imgmsg(self.rojo, encoding="passthrough")
@@ -664,6 +715,7 @@ def main():
             cam.main()
         else:
             print("Grabacion detenida")
+
     rospy.spin()
 
 if __name__ == '__main__':
