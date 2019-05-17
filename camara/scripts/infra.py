@@ -115,8 +115,7 @@ class Camera(object):
              [0, 0, 1]], dtype="double")
         self.dist_coeefs = np.zeros((4, 1))
         self.r_vec = np.array([[0.01891013], [0.08560084], [-3.14392813]])
-        self.t_vec = np.array(
-            [[-14.97821226], [-10.62040383], [-2053.03596872]])
+        self.t_vec = np.array([[-14.97821226], [-10.62040383], [-2053.03596872]])
 
         self.pose_stabilizers = [Stabilizer(
             state_num=2,
@@ -429,6 +428,7 @@ class Camera(object):
         self.index_fore = np.argmax(y_plot_fore)
         self.index_nose_b = np.argmax(y_plot_nose_b)
         self.index_fore_b = np.argmax(y_plot_fore_b)
+
         #Calculates the hearth rate
         self.bpm_a = self.xf[self.index_nose] * 60
         self.bpm_b = self.xf[self.index_fore] * 60
@@ -632,30 +632,30 @@ class Camera(object):
             if euler_angle[0] < -15:
                 self.pitch_counter += 1
                 if self.pitch_counter > 50:
-                    cv2.putText(self.rojo, 'Alerta por desatencion', (380,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255),1)
+                    cv2.putText(self.rojo, 'Alerta por desatencion', (380,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255), 1)
             else:
                 self.pitch_counter = 0
 
             if euler_angle[1] < -25 or euler_angle[1] > 25:
                 self.yaw_counter += 1
                 if self.yaw_counter > 50:
-                    cv2.putText(self.rojo, 'Alerta por desatencion', (380,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255),1)
+                    cv2.putText(self.rojo, 'Alerta por desatencion', (380,20), cv2.FONT_HERSHEY_SIMPLEX,0.7,(255, 255, 255), 1)
             else:
                 self.yaw_counter = 0
 
 
 
             #Put the information into the frame
-            cv2.putText(self.rojo, 'Num. Parpadeos:{}' .format(self.total), (15,20), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
-            cv2.putText(self.rojo, 'Num. Bostezos:{}' .format(self.cont_yawn), (15,40), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 0, 0),1)
-            cv2.putText(self.rojo, 'HR:{}' .format(self.window_hr), (15,460), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
-            cv2.putText(self.rojo, 'HR_B:{}' .format(self.window_hr_b), (15,430), cv2.FONT_HERSHEY_SIMPLEX,0.65,(255, 255, 255),1)
-            cv2.putText(self.rojo, 'PITCH:{}' .format(euler_angle[0]), (490,420), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
-            cv2.putText(self.rojo, 'YAW:{}' .format(euler_angle[1]), (490,440), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
-            cv2.putText(self.rojo, 'ROLL:{}' .format(euler_angle[2]), (490,460), cv2.FONT_HERSHEY_SIMPLEX,0.5,(255, 255, 255),1)
+            cv2.putText(self.rojo, 'Num. Parpadeos:{}' .format(self.total), (15,20), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 1)
+            cv2.putText(self.rojo, 'Num. Bostezos:{}' .format(self.cont_yawn), (15,40), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 1)
+            cv2.putText(self.rojo, 'HR:{}' .format(self.window_hr), (15,460), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 1)
+            cv2.putText(self.rojo, 'HR_B:{}' .format(self.window_hr_b), (15,430), cv2.FONT_HERSHEY_SIMPLEX, 0.65, (255, 255, 255), 1)
+            cv2.putText(self.rojo, 'PITCH:{}' .format(euler_angle[0]), (490,420), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(self.rojo, 'YAW:{}' .format(euler_angle[1]), (490,440), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+            cv2.putText(self.rojo, 'ROLL:{}' .format(euler_angle[2]), (490,460), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
-            # self.video = cv2.cvtColor(self.rojo,cv2.COLOR_GRAY2BGR)
-            # out.write(self.video)
+            self.video = cv2.cvtColor(self.rojo,cv2.COLOR_GRAY2BGR)
+            out.write(self.video)
             #
             # self.cont_video += 1
             #
