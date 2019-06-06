@@ -1,89 +1,72 @@
 #!/usr/bin/env python
-import rospy
-import cv2
+import pyrealsense2 as rs
 import numpy as np
-from sensor_msgs.msg import Image
-import imutils
-import dlib
-import sys
+import cv2
 import os
-from cv_bridge import CvBridge, CvBridgeError
+import keyboard
 
-enable_infra = False
-bridge = CvBridge()
+# Configure depth and color streams
+pipeline = rs.pipeline()
+config = rs.config()
+config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.infrared, 640, 480, rs.format.y16, 30)
 
+# Start streaming
+pipeline.start(config)
 
-class Modelo(object):
+#Asks for the user ID
+id = str(raw_input("Introduzca la cedula: "))
 
-    def __init__(self):
+#Creates folder for the user
+path = ("/home/innovacion/Bags/" + id )
+os.mkdir(path)
+count = 0
 
-        """ Subscribers """
-        rospy.Subscriber("/camera/color/image_raw", Image,  self.callback_infra,queue_size=1)
+try:
+    while True:
 
-        """ Node Parameters """
-        protocol =  (os.path.join(os.path.dirname(sys.path[0]), 'scripts', 'deploy.prototxt.txt'))
-        model = (os.path.join(os.path.dirname(sys.path[0]), 'scripts', 'res10_300x300_ssd_iter_140000.caffemodel'))
-        self.net =  cv2.dnn.readNetFromCaffe(protocol, model)
+        # Wait for a coherent pair of frames: depth and color
+        frames = pipeline.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        color_frame = frames.get_color_frame()
+        infrared_frame = frames.get_infrared_frame()
+        if not depth_frame or not color_frame:
+            continue
 
-    def callback_infra(self,datos):
+        # Convert images to numpy arrays
+        depth_image = np.asanyarray(depth_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
+        infrared_image = np.asanyarray(infrared_frame.get_data())
 
-        global enable_infra
-        enable_infra = True
-        self.current_infra = datos
+        # Stack both images horizontally
+        images = np.hstack((infrared_image, depth_image))
 
+        #Take the pictures
+        k = cv2.waitKey(1)
+        if k%256 == 32:
+            s = str(count)
+            print("Empece la foto", s)
+            path_infra = (path + "/" + s + "infra.png")
+            path_rgb = (path + "/" + s + "rgb.png")
+            path_depth = (path + "/" + s + "depth.png")
+            cv2.imwrite(path_infra, infrared_image)
+            cv2.imwrite(path_rgb, color_image)
+            cv2.imwrite(path_depth, depth_image)
+            count += 1
+            print("Termine la toma", s)
 
-    def main(self):
+        # Show depth and infrared images
+        cv2.namedWindow('RealSense', cv2.WINDOW_AUTOSIZE)
+        cv2.imshow('RealSense', images)
+        cv2.waitKey(1)
 
-        try:
-            self.rojo = bridge.imgmsg_to_cv2(self.current_infra,desired_encoding="passthrough")
-        except CvBridgeError as e:
-            print(e)
+        #Show color image
+        cv2.namedWindow('RealSenseb', cv2.WINDOW_AUTOSIZE)
+        cv2.imshow('RealSenseb', color_image)
+        cv2.waitKey(1)
 
-        print (self.rojo.shape, "ACAAAA")
+finally:
 
-        blob = cv2.dnn.blobFromImage(self.rojo)
-        self.net.setInput(blob)
-        detections = self.net.forward()
-
-
-        for i in range(0, detections.shape[2]):
-
-            confidence = detections[0, 0, i, 2]
-        # filter out weak detections by ensuring the `confidence` is
-        # greater than the minimum confidence
-            if confidence < 0.5:
-                continue
-            # compute the (x, y)-coordinates of the bounding box for the
-            # object
-            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-            (startX, startY, endX, endY) = box.astype("int")
-
-            # draw the bounding box of the face along with the associated
-            # probability
-            text = "{:.2f}%".format(confidence * 100)
-            y = startY - 10 if startY - 10 > 10 else startY + 10
-            cv2.rectangle(frame, (startX, startY), (endX, endY),
-                (0, 0, 255), 2)
-            cv2.putText(frame, text, (startX, y),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-
-            cv2.imshow("Frame", frame)
-            key = cv2.waitKey(1) & 0xFF
-
-            if key == ord("q"):
-                break
-
-if __name__ == '__main__':
-
-    rospy.init_node('Prueba',anonymous=True)
-    model = Modelo()
-    rospy.loginfo('Node started')
-
-
-    while not rospy.is_shutdown():
-
-        if enable_infra is True:
-            model.main()
-        else:
-            print("Grabacion detenida")
-    rospy.spin()
+    # Stop streaming
+    pipeline.stop()
