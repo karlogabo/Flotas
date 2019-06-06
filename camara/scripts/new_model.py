@@ -3,7 +3,7 @@ import pyrealsense2 as rs
 import numpy as np
 import cv2
 import os
-import keyboard
+
 
 # Configure depth and color streams
 pipeline = rs.pipeline()
@@ -19,7 +19,7 @@ pipeline.start(config)
 id = str(raw_input("Introduzca la cedula: "))
 
 #Creates folder for the user
-path = ("/home/innovacion/Bags/" + id )
+path = ("/root/Bags/" + id )
 os.mkdir(path)
 count = 0
 
